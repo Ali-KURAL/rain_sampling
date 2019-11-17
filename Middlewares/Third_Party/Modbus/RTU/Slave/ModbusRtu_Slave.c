@@ -139,8 +139,7 @@ int ModbusRtu_Slave_CalculateRxBufferSize( const ModbusBuffer *buffer ){
 			expectedFrameSize = 8;
 			break;
 		case FORCE_MULTIPLE_COILS:
-			//kaanbak: burada usendim hesaplamaya ilerde bakariz
-			expectedFrameSize = buffer->buffer[5] / 8 + 9;
+			expectedFrameSize = buffer->buffer[6] + 9;
 		case PRESET_MULTIPLE_REGISTERS:
 			expectedFrameSize = buffer->buffer[5] * 2 + 9;
 			break;
