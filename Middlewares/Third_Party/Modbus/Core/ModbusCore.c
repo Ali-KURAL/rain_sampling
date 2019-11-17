@@ -18,6 +18,7 @@ void ModbusCore_ReadInputStatus( const ModbusBuffer* inputPdu, ModbusBuffer* out
 void ModbusCore_ReadHoldingRegisters( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu );
 void ModbusCore_ReadInputRegisters( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu );
 void ModbusCore_WriteSingleCoil( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu );
+void ModbusCore_WriteSingleHoldingRegister( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu );
 
 void ModbusCore_Process( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu ){
 	ModbusMsgTypes rxMsgType = (ModbusMsgTypes)inputPdu->buffer[0];
@@ -40,7 +41,8 @@ void ModbusCore_Process( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu )
 		case FORCE_MULTIPLE_COILS:
 			//break;
 		case PRESET_SINGLE_REGISTER:
-			//break;
+			ModbusCore_WriteSingleHoldingRegister( inputPdu, outputPdu );
+			break;
 		case PRESET_MULTIPLE_REGISTERS:
 			//break;
 		default:
@@ -181,6 +183,21 @@ void ModbusCore_WriteSingleCoil( const ModbusBuffer* inputPdu, ModbusBuffer* out
 		return;
 	}
 	ModbusOpResult _result = ModbusSlave_SetRegisterValueByAddress( COIL_STATUS, coilAddress, writeValue );
+	if( _result == MODBUS_OP_SUCCESS ){
+		memcpy(outputPdu->buffer,inputPdu->buffer,inputPdu->index);
+		outputPdu->index = inputPdu->index;
+	}else{
+		outputPdu->index = 0;
+		outputPdu->buffer[outputPdu->index++] |= 0x80;
+		outputPdu->buffer[outputPdu->index++] = MODBUS_ILLEGAL_DATA_ADDRESS;
+	}
+}
+
+void ModbusCore_WriteSingleHoldingRegister( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu ){
+	uint16_t coilAddress = ( inputPdu->buffer[1] << 8 ) | inputPdu->buffer[2];
+	uint16_t valueToWrite = ( inputPdu->buffer[3] << 8 ) | inputPdu->buffer[4];
+
+	ModbusOpResult _result = ModbusSlave_SetRegisterValueByAddress( HOLDING_REGISTER, coilAddress, valueToWrite );
 	if( _result == MODBUS_OP_SUCCESS ){
 		memcpy(outputPdu->buffer,inputPdu->buffer,inputPdu->index);
 		outputPdu->index = inputPdu->index;
