@@ -1,0 +1,26 @@
+/*
+ * EventLogger.h
+ *
+ *  Created on: Nov 15, 2019
+ *      Author: Kaan
+ */
+
+#ifndef INC_EVENTLOGGER_H_
+#define INC_EVENTLOGGER_H_
+
+typedef enum SystemEvents{
+	RAIN_STARTED_EV = 0,
+	RAIN_STOPPED_EV = 1,
+	DUST_COVER_CLOSED_EV = 2,
+	DUST_COVER_OPENED_EV = 3,
+	RAIN_COVER_CLOSED_EV = 4,
+	RAIN_COVER_OPENED_EV = 5,
+	RAIN_BOX_TOP_LEVEL_ON = 6,
+	RAIN_BOX_TOP_LEVEL_OFF = 7,
+	RAIN_BOX_BOTTOM_LEVEL_ON = 8,
+	RAIN_BOX_BOTTOM_LEVEL_OFF = 9,
+	SAMPLE_BOX_TOP_LEVEL_ON = 10,
+	SAMPLE_BOX_TOP_LEVEL_OFF = 11
+}SystemEvents;
+
+#endif /* INC_EVENTLOGGER_H_ */
