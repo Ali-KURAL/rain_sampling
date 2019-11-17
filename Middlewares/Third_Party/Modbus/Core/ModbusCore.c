@@ -17,6 +17,7 @@ void ModbusCore_ReadCoilStatus( const ModbusBuffer* inputPdu, ModbusBuffer* outp
 void ModbusCore_ReadInputStatus( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu );
 void ModbusCore_ReadHoldingRegisters( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu );
 void ModbusCore_ReadInputRegisters( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu );
+void ModbusCore_WriteSingleCoil( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu );
 
 void ModbusCore_Process( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu ){
 	ModbusMsgTypes rxMsgType = (ModbusMsgTypes)inputPdu->buffer[0];
@@ -34,8 +35,13 @@ void ModbusCore_Process( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu )
 			ModbusCore_ReadInputRegisters( inputPdu, outputPdu );
 			break;
 		case FORCE_SINGLE_COIL:
-			//break;
+			ModbusCore_WriteSingleCoil( inputPdu, outputPdu );
+			break;
 		case FORCE_MULTIPLE_COILS:
+			//break;
+		case PRESET_SINGLE_REGISTER:
+			//break;
+		case PRESET_MULTIPLE_REGISTERS:
 			//break;
 		default:
 			ModbusCore_InvalidOperation( rxMsgType, outputPdu );
@@ -50,8 +56,8 @@ void ModbusCore_InvalidOperation(  ModbusMsgTypes type, ModbusBuffer* outputPdu 
 }
 
 void ModbusCore_ReadCoilStatus( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu ){
-	uint16_t startRegAddress = ( inputPdu->buffer[1] >> 8 ) | inputPdu->buffer[2];
-	uint16_t totalRequestedRegCount = ( inputPdu->buffer[3] >> 8 ) | inputPdu->buffer[4];
+	uint16_t startRegAddress = ( inputPdu->buffer[1] << 8 ) | inputPdu->buffer[2];
+	uint16_t totalRequestedRegCount = ( inputPdu->buffer[3] << 8 ) | inputPdu->buffer[4];
 	outputPdu->index = 0;
 	outputPdu->buffer[outputPdu->index++] = inputPdu->buffer[0];
 	outputPdu->buffer[outputPdu->index++] = totalRequestedRegCount / 8;
@@ -61,8 +67,8 @@ void ModbusCore_ReadCoilStatus( const ModbusBuffer* inputPdu, ModbusBuffer* outp
 	}
 
 	for( int k = 0; k < totalRequestedRegCount; k++ ){
-		bool _value = 0;
-		ModbusOpResult _result = ModbusSlave_GetCoilStatusByAddress( startRegAddress+k, &_value );
+		uint16_t _value = 0;
+		ModbusOpResult _result = ModbusSlave_GetRegisterValueByAddress( COIL_STATUS, startRegAddress+k, &_value );
 		if( _result == MODBUS_OP_SUCCESS ){
 			outputPdu->buffer[outputPdu->index + ( k / 8 )] |= ( _value << ( k % 8 ) );
 		}else{
@@ -80,8 +86,8 @@ void ModbusCore_ReadCoilStatus( const ModbusBuffer* inputPdu, ModbusBuffer* outp
 }
 
 void ModbusCore_ReadInputStatus( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu ){
-	uint16_t startRegAddress = ( inputPdu->buffer[1] >> 8 ) | inputPdu->buffer[2];
-	uint16_t totalRequestedRegCount = ( inputPdu->buffer[3] >> 8 ) | inputPdu->buffer[4];
+	uint16_t startRegAddress = ( inputPdu->buffer[1] << 8 ) | inputPdu->buffer[2];
+	uint16_t totalRequestedRegCount = ( inputPdu->buffer[3] << 8 ) | inputPdu->buffer[4];
 	outputPdu->index = 0;
 	outputPdu->buffer[outputPdu->index++] = inputPdu->buffer[0];
 	outputPdu->buffer[outputPdu->index++] = totalRequestedRegCount / 8;
@@ -91,8 +97,8 @@ void ModbusCore_ReadInputStatus( const ModbusBuffer* inputPdu, ModbusBuffer* out
 	}
 
 	for( int k = 0; k < totalRequestedRegCount; k++ ){
-		bool _value = 0;
-		ModbusOpResult _result = ModbusSlave_GetInputStatusByAddress( startRegAddress+k, &_value );
+		uint16_t _value = 0;
+		ModbusOpResult _result = ModbusSlave_GetRegisterValueByAddress( INPUT_STATUS, startRegAddress+k, &_value );
 		if( _result == MODBUS_OP_SUCCESS ){
 			outputPdu->buffer[outputPdu->index + ( k / 8 )] |= ( _value << ( k % 8 ) );
 		}else{
@@ -110,15 +116,15 @@ void ModbusCore_ReadInputStatus( const ModbusBuffer* inputPdu, ModbusBuffer* out
 }
 
 void ModbusCore_ReadHoldingRegisters( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu ){
-	uint16_t startRegAddress = ( inputPdu->buffer[1] >> 8 ) | inputPdu->buffer[2];
-	uint16_t totalRequestedRegCount = ( inputPdu->buffer[3] >> 8 ) | inputPdu->buffer[4];
+	uint16_t startRegAddress = ( inputPdu->buffer[1] << 8 ) | inputPdu->buffer[2];
+	uint16_t totalRequestedRegCount = ( inputPdu->buffer[3] << 8 ) | inputPdu->buffer[4];
 	outputPdu->index = 0;
 	outputPdu->buffer[outputPdu->index++] = inputPdu->buffer[0];
 	outputPdu->buffer[outputPdu->index++] = totalRequestedRegCount * 2;
 	uint8_t success = true;
 	for(int k = 0; k < totalRequestedRegCount; k++ ){
 		uint16_t _value = 0;
-		ModbusOpResult _result = ModbusSlave_GetHoldingRegisterByAddress(startRegAddress+k, &_value );
+		ModbusOpResult _result = ModbusSlave_GetRegisterValueByAddress( HOLDING_REGISTER, startRegAddress+k, &_value );
 		if( _result == MODBUS_OP_SUCCESS ){
 			outputPdu->buffer[outputPdu->index++] = _value >> 8;
 			outputPdu->buffer[outputPdu->index++] = _value & 0xFF;
@@ -134,15 +140,15 @@ void ModbusCore_ReadHoldingRegisters( const ModbusBuffer* inputPdu, ModbusBuffer
 }
 
 void ModbusCore_ReadInputRegisters( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu ){
-	uint16_t startRegAddress = ( inputPdu->buffer[1] >> 8 ) | inputPdu->buffer[2];
-	uint16_t totalRequestedRegCount = ( inputPdu->buffer[3] >> 8 ) | inputPdu->buffer[4];
+	uint16_t startRegAddress = ( inputPdu->buffer[1] << 8 ) | inputPdu->buffer[2];
+	uint16_t totalRequestedRegCount = ( inputPdu->buffer[3] << 8 ) | inputPdu->buffer[4];
 	outputPdu->index = 0;
 	outputPdu->buffer[outputPdu->index++] = inputPdu->buffer[0];
 	outputPdu->buffer[outputPdu->index++] = totalRequestedRegCount * 2;
 	uint8_t success = true;
 	for(int k = 0; k < totalRequestedRegCount; k++ ){
 		uint16_t _value = 0;
-		ModbusOpResult _result = ModbusSlave_GetInputRegisterByAddress(startRegAddress+k, &_value );
+		ModbusOpResult _result = ModbusSlave_GetRegisterValueByAddress( INPUT_REGISTER, startRegAddress+k, &_value );
 		if( _result == MODBUS_OP_SUCCESS ){
 			outputPdu->buffer[outputPdu->index++] = _value >> 8;
 			outputPdu->buffer[outputPdu->index++] = _value & 0xFF;
@@ -152,6 +158,32 @@ void ModbusCore_ReadInputRegisters( const ModbusBuffer* inputPdu, ModbusBuffer* 
 	}
 	//
 	if( !success ){
+		outputPdu->index = 0;
+		outputPdu->buffer[outputPdu->index++] |= 0x80;
+		outputPdu->buffer[outputPdu->index++] = MODBUS_ILLEGAL_DATA_ADDRESS;
+	}
+}
+
+void ModbusCore_WriteSingleCoil( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu ){
+	uint16_t coilAddress = ( inputPdu->buffer[1] << 8 ) | inputPdu->buffer[2];
+	uint16_t statusToWrite = ( inputPdu->buffer[3] << 8 ) | inputPdu->buffer[4];
+	uint16_t writeValue = 0;
+
+	if( statusToWrite == 0xFF00 ){
+		writeValue = 1;
+	}else if( statusToWrite == 0x0000 ){
+		writeValue = 0;
+	}else
+	{
+		outputPdu->index = 0;
+		outputPdu->buffer[outputPdu->index++] |= 0x80;
+		outputPdu->buffer[outputPdu->index++] = MODBUS_ILLEGAL_DATA_ADDRESS;
+		return;
+	}
+	ModbusOpResult _result = ModbusSlave_SetRegisterValueByAddress( COIL_STATUS, coilAddress, writeValue );
+	if( _result == MODBUS_OP_SUCCESS ){
+		outputPdu = (ModbusBuffer*)inputPdu;
+	}else{
 		outputPdu->index = 0;
 		outputPdu->buffer[outputPdu->index++] |= 0x80;
 		outputPdu->buffer[outputPdu->index++] = MODBUS_ILLEGAL_DATA_ADDRESS;

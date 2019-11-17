@@ -11,18 +11,15 @@
 #include <stdint.h>
 
 typedef enum BME280_Result{
-	BME280_SUCCESS = 0
+	BME280_SUCCESS = 0,
+	BME280_NOT_EXIST = 1
 }BME280_Result;
 
-typedef BME280_Result(*BME280_ReadTemperature)(float *value);
-typedef BME280_Result(*BME280_ReadHumidty)(float *value);
-typedef BME280_Result(*BME280_ReadAirPressure)(uint16_t *value);
-typedef void(*BME280_I2CRead)(void);
-typedef void(*BME280_I2CWrite)(void);
-
+typedef uint8_t(*BME280_Read)(uint16_t reg, uint8_t* value, uint8_t size );
 typedef struct BME280_Handle_t{
-
+	BME280_Read read;
 }BME280_Handle_t;
+
 
 
 

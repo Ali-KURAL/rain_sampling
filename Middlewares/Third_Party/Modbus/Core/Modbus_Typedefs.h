@@ -16,7 +16,10 @@
 typedef uint8_t ModbusID;
 
 
-typedef int16_t ModbusRegister_Handle_t;
+
+
+typedef void(*ModbusRegisterRead)(void);
+typedef void(*ModbusRegisterWrite)(uint16_t value);
 
 typedef enum ModbusMsgTypes {
 	READ_COIL_STATUS = 1,
@@ -52,7 +55,8 @@ typedef enum ModbusException {
 
 typedef enum ModbusOpResult{
 	MODBUS_OP_SUCCESS,
-	MODBUS_OP_INVALID_REGISTER
+	MODBUS_OP_INVALID_REGISTER,
+	MODBUS_OP_INVALID_REQUEST,
 }ModbusOpResult;
 
 typedef enum ModbusBaudRate{
@@ -78,8 +82,15 @@ typedef struct ModbusRegister{
 	uint16_t value;
 	ModbusRegisterType type;
 	bool isUsed;
+	ModbusRegisterRead onRead;
+	ModbusRegisterWrite onWrite;
 }ModbusRegister;
 
+
+typedef struct ModbusRegister_Handle_t{
+	int16_t id;
+	ModbusRegisterType type;
+}ModbusRegister_Handle_t;
 
 typedef struct ModbusBuffer{
 	uint8_t buffer[MODBUS_RTU_RX_BUFFER_SIZE];

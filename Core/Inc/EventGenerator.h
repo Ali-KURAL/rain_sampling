@@ -6,6 +6,7 @@
 #include "stm32f7xx_hal.h"
 
 typedef void(*TransitionCallback)( uint8_t newState);
+
 typedef int16_t EventSystemHandler_t;
 
 

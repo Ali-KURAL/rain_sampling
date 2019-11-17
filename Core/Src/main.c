@@ -94,15 +94,17 @@ FutureContract_Handle_t dustBoxCoverTimeoutHandle = -1;
 FutureContract_Handle_t rainBoxCoverTimeoutHandle = -1;
 FutureContract_Handle_t samplingBoxFillTimeoutHandle = -1;
 
-ModbusRegister_Handle_t rainingRegHandle = -1;
-ModbusRegister_Handle_t rainBoxFullRegHandle = -1;
-ModbusRegister_Handle_t rainBoxEmptyRegHandle = -1;
-ModbusRegister_Handle_t sampleBoxFullRegHandle = -1;
+ModbusRegister_Handle_t rainingRegHandle = { -1 ,0 };
+ModbusRegister_Handle_t rainBoxFullRegHandle = { -1 ,0 };
+ModbusRegister_Handle_t rainBoxEmptyRegHandle = { -1 ,0 };
+ModbusRegister_Handle_t sampleBoxFullRegHandle = { -1 ,0 };
 
-ModbusRegister_Handle_t dischargeValveRegHandle = -1;
-ModbusRegister_Handle_t sampleBoxValveRegHandle = -1;
+ModbusRegister_Handle_t dischargeValveRegHandle = { -1 ,0 };
+ModbusRegister_Handle_t sampleBoxValveRegHandle = { -1 ,0 };
 
-
+ModbusRegister_Handle_t userLed1RegHandle = { -1 ,0 };
+ModbusRegister_Handle_t userLed2RegHandle = { -1 ,0 };
+ModbusRegister_Handle_t userLed3RegHandle = { -1 ,0 };
 // Timer Callbacks
 void onDustBoxCoverClosingTimeout(){
 	MotorDriver_Stop();
@@ -114,9 +116,12 @@ void onRainBoxCoverClosingTimeout(){
 
 void onSamplingBoxFillingTimeout(){
 	ValveDriver_CloseSamplingBoxValve();
-	ModbusSlave_SetInputStatus( sampleBoxValveRegHandle, 0 );
+	ModbusSlave_SetRegisterValue( &sampleBoxValveRegHandle, 0 );
 }
 
+void onBme280ReadPeriodTimeout(){
+
+}
 
 /* Actuator dispatchers */
 void RainChangeDispatcher( SystemCommand action,const SystemState* state){
@@ -133,25 +138,14 @@ void RainChangeDispatcher( SystemCommand action,const SystemState* state){
 			break;
 		case CLOSE_DISCHARGING_VALVE:
 			ValveDriver_CloseDischarcingValve();
-			ModbusSlave_SetInputStatus( dischargeValveRegHandle, 0 );
+			ModbusSlave_SetRegisterValue( &dischargeValveRegHandle, 0 );
 			break;
 		case CLOSE_SAMPLING_BOX_VALVE:
 			ValveDriver_CloseSamplingBoxValve();
-			ModbusSlave_SetInputStatus( sampleBoxValveRegHandle, 0 );
+			ModbusSlave_SetRegisterValue( &sampleBoxValveRegHandle, 0 );
 			break;
 		default:
 			break;
-	}
-}
-
-/* Sensor state changes */
-void onRainSensorUpdate( uint8_t newState ){
-	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_STARTED, RainChangeDispatcher );
-		ModbusSlave_SetInputStatus( rainingRegHandle, 1 );
-	}else{
-		StateMachine_Act( RAIN_FINISHED, RainChangeDispatcher );
-		ModbusSlave_SetInputStatus( rainingRegHandle, 0 );
 	}
 }
 
@@ -159,53 +153,23 @@ void valveDispatcher(SystemCommand action, const SystemState* state ){
 	switch( action ){
 	case OPEN_DISCHARGING_VALVE:
 		ValveDriver_OpenDischarcingValve();
-		ModbusSlave_SetInputStatus( dischargeValveRegHandle, 1 );
+		ModbusSlave_SetRegisterValue( &dischargeValveRegHandle, 1 );
 		break;
 	case CLOSE_DISCHARGING_VALVE:
 		ValveDriver_CloseDischarcingValve();
-		ModbusSlave_SetInputStatus( dischargeValveRegHandle, 0 );
+		ModbusSlave_SetRegisterValue( &dischargeValveRegHandle, 0 );
 		break;
 	case OPEN_SAMPLING_BOX_VALVE:
 		samplingBoxFillTimeoutHandle = FutureContracts_Register( TIMEOUT_FOR_SAMPLING_BOX_FILLING, 1, onSamplingBoxFillingTimeout );
 		ValveDriver_OpenSamplingBoxValve();
-		ModbusSlave_SetInputStatus( sampleBoxValveRegHandle, 1 );
+		ModbusSlave_SetRegisterValue( &sampleBoxValveRegHandle, 1 );
 		break;
 	case CLOSE_SAMPLING_BOX_VALVE:
 		ValveDriver_CloseSamplingBoxValve();
-		ModbusSlave_SetInputStatus( sampleBoxValveRegHandle, 0 );
+		ModbusSlave_SetRegisterValue( &sampleBoxValveRegHandle, 0 );
 		break;
 	default:
 		break;
-	}
-}
-
-void onRainBoxTopSensorChange( uint8_t newState ){
-	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_BOX_FILLED, valveDispatcher );
-		ModbusSlave_SetInputStatus( rainBoxFullRegHandle, 1 );
-	}else{
-		StateMachine_Act( RAIN_BOX_STARTED_DRAINING, valveDispatcher );
-		ModbusSlave_SetInputStatus( rainBoxFullRegHandle, 0 );
-	}
-}
-
-void onRainBoxBottomSensorChange( uint8_t newState ){
-	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_BOX_STARTED_FILLING, valveDispatcher );
-		ModbusSlave_SetInputStatus( rainBoxEmptyRegHandle, 0 );
-	}else{
-		StateMachine_Act( RAIN_BOX_EMPTIED, valveDispatcher );
-		ModbusSlave_SetInputStatus( rainBoxEmptyRegHandle, 1 );
-	}
-}
-
-void onSamplingBoxTopSensorChange( uint8_t newState ){
-	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( SAMPLING_BOX_FILLED, valveDispatcher );
-		ModbusSlave_SetInputStatus( sampleBoxFullRegHandle, 1 );
-	}else{
-		StateMachine_Act( SAMPLING_BOX_STARTED_DRAINING, valveDispatcher );
-		ModbusSlave_SetInputStatus( sampleBoxFullRegHandle, 0 );
 	}
 }
 
@@ -220,14 +184,6 @@ void rainBoxCoverChangeActuator( SystemCommand action, const SystemState* state 
 	}
 }
 
-void onRainBoxCoverSensorChange( uint8_t newState ){
-	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_BOX_COVER_CLOSED, rainBoxCoverChangeActuator );
-	}else{
-		StateMachine_Act( RAIN_BOX_COVER_OPENED, rainBoxCoverChangeActuator );
-	}
-}
-
 void dustBoxCoverChangeActuator( SystemCommand action, const SystemState* state ){
 	switch(action){
 		case STOP_COVER_MOTOR:
@@ -236,6 +192,55 @@ void dustBoxCoverChangeActuator( SystemCommand action, const SystemState* state 
 			break;
 		default:
 			break;
+	}
+}
+
+/* Sensor state changes */
+void onRainSensorUpdate( uint8_t newState ){
+	if( newState == GPIO_PIN_SET ){
+		StateMachine_Act( RAIN_STARTED, RainChangeDispatcher );
+		ModbusSlave_SetRegisterValue( &rainingRegHandle, 1 );
+	}else{
+		StateMachine_Act( RAIN_FINISHED, RainChangeDispatcher );
+		ModbusSlave_SetRegisterValue( &rainingRegHandle, 0 );
+	}
+}
+
+void onRainBoxTopSensorChange( uint8_t newState ){
+	if( newState == GPIO_PIN_SET ){
+		StateMachine_Act( RAIN_BOX_FILLED, valveDispatcher );
+		ModbusSlave_SetRegisterValue( &rainBoxFullRegHandle, 1 );
+	}else{
+		StateMachine_Act( RAIN_BOX_STARTED_DRAINING, valveDispatcher );
+		ModbusSlave_SetRegisterValue( &rainBoxFullRegHandle, 0 );
+	}
+}
+
+void onRainBoxBottomSensorChange( uint8_t newState ){
+	if( newState == GPIO_PIN_SET ){
+		StateMachine_Act( RAIN_BOX_STARTED_FILLING, valveDispatcher );
+		ModbusSlave_SetRegisterValue( &rainBoxEmptyRegHandle, 0 );
+	}else{
+		StateMachine_Act( RAIN_BOX_EMPTIED, valveDispatcher );
+		ModbusSlave_SetRegisterValue( &rainBoxEmptyRegHandle, 1 );
+	}
+}
+
+void onSamplingBoxTopSensorChange( uint8_t newState ){
+	if( newState == GPIO_PIN_SET ){
+		StateMachine_Act( SAMPLING_BOX_FILLED, valveDispatcher );
+		ModbusSlave_SetRegisterValue( &sampleBoxFullRegHandle, 1 );
+	}else{
+		StateMachine_Act( SAMPLING_BOX_STARTED_DRAINING, valveDispatcher );
+		ModbusSlave_SetRegisterValue( &sampleBoxFullRegHandle, 0 );
+	}
+}
+
+void onRainBoxCoverSensorChange( uint8_t newState ){
+	if( newState == GPIO_PIN_SET ){
+		StateMachine_Act( RAIN_BOX_COVER_CLOSED, rainBoxCoverChangeActuator );
+	}else{
+		StateMachine_Act( RAIN_BOX_COVER_OPENED, rainBoxCoverChangeActuator );
 	}
 }
 
@@ -249,7 +254,18 @@ void onDustBoxCoverSensorChange( uint8_t newState ){
 }
 
 
+// Modbus Register Callbacks
+void led1RegOnWrite(uint16_t value){
+	HAL_GPIO_WritePin(LD1_GPIO_Port,LD1_Pin,(GPIO_PinState)value);
+}
 
+void led2RegOnWrite(uint16_t value){
+	HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,(GPIO_PinState)value);
+}
+
+void led3RegOnWrite(uint16_t value){
+	HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,(GPIO_PinState)value);
+}
 
 /* USER CODE END PFP */
 
@@ -273,7 +289,7 @@ void ModbusRtu_InitCallback(){
 }
 
 void ModbusRtu_TransmitCallback( uint8_t* buffer, uint16_t lengthOfBuffer){
-	HAL_StatusTypeDef result = HAL_UART_Transmit( &huart3, buffer, lengthOfBuffer, 200 );
+	HAL_UART_Transmit( &huart3, buffer, lengthOfBuffer, 200 );
 }
 
 void ModbusRtu_ReadRequestCallback( uint8_t* buffer, uint16_t length ){
@@ -368,6 +384,15 @@ int main(void)
 
   dischargeValveRegHandle = ModbusSlave_CreateInputStatus( DISCHARGING_VALVE_STATUS_REGISTER, 0 );
   sampleBoxValveRegHandle = ModbusSlave_CreateInputStatus( SAMPLE_BOX_VALVE_STATUS_REGISTER, 0 );
+
+  userLed1RegHandle = ModbusSlave_CreateCoilStatus(10, 0 );
+  userLed2RegHandle = ModbusSlave_CreateCoilStatus(11, 0 );
+  userLed3RegHandle = ModbusSlave_CreateCoilStatus(12, 0 );
+
+  ModbusSlave_AddOnWriteCallback(&userLed1RegHandle, led1RegOnWrite);
+  ModbusSlave_AddOnWriteCallback(&userLed2RegHandle, led2RegOnWrite);
+  ModbusSlave_AddOnWriteCallback(&userLed3RegHandle, led3RegOnWrite);
+
 
   /* USER CODE END RTOS_THREADS */
 

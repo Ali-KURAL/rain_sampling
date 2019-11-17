@@ -86,8 +86,8 @@ void StateMachine_Act( SystemAction action, StateDispatch dispatch ){
 				if( _state.isSamplingBoxFull ){
 					/* Info : Ornek alma islemi tamamlandiktan sonra Yağmur durana kadar vana 1 açık kalacaktır.
 					*/
-					_state.discharcingValve = VALVE_CLOSED;
-					dispatch( CLOSE_DISCHARGING_VALVE, &_state );
+					_state.discharcingValve = VALVE_OPEN;
+					dispatch( OPEN_DISCHARGING_VALVE, &_state );
 				}else{
 					// Ornek alma islemi tamamlanmadi ama yagmur bittigi icin haznede dolan suyu, orneklemeye atiyoruz
 					_state.samplingBoxValve = VALVE_OPEN;
