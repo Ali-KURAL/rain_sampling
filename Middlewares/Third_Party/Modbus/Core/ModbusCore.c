@@ -182,7 +182,8 @@ void ModbusCore_WriteSingleCoil( const ModbusBuffer* inputPdu, ModbusBuffer* out
 	}
 	ModbusOpResult _result = ModbusSlave_SetRegisterValueByAddress( COIL_STATUS, coilAddress, writeValue );
 	if( _result == MODBUS_OP_SUCCESS ){
-		outputPdu = (ModbusBuffer*)inputPdu;
+		memcpy(outputPdu->buffer,inputPdu->buffer,inputPdu->index);
+		outputPdu->index = inputPdu->index;
 	}else{
 		outputPdu->index = 0;
 		outputPdu->buffer[outputPdu->index++] |= 0x80;
