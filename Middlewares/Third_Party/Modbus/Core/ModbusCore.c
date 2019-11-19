@@ -39,12 +39,14 @@ void ModbusCore_Process( const ModbusBuffer* inputPdu, ModbusBuffer* outputPdu )
 			ModbusCore_WriteSingleCoil( inputPdu, outputPdu );
 			break;
 		case FORCE_MULTIPLE_COILS:
-			//break;
+			ModbusCore_InvalidOperation( rxMsgType, outputPdu );
+			break;
 		case PRESET_SINGLE_REGISTER:
 			ModbusCore_WriteSingleHoldingRegister( inputPdu, outputPdu );
 			break;
 		case PRESET_MULTIPLE_REGISTERS:
-			//break;
+			ModbusCore_InvalidOperation( rxMsgType, outputPdu );
+			break;
 		default:
 			ModbusCore_InvalidOperation( rxMsgType, outputPdu );
 			break;
