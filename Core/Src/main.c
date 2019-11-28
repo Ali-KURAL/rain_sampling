@@ -89,6 +89,7 @@ static void MX_IWDG_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
+EventSystemHandler_t RainSensorReadHandle = -1;
 
 FutureContract_Handle_t dustBoxCoverTimeoutHandle = -1;
 FutureContract_Handle_t rainBoxCoverTimeoutHandle = -1;
@@ -108,10 +109,12 @@ ModbusRegister_Handle_t userLed3RegHandle = { -1 ,0 };
 // Timer Callbacks
 void onDustBoxCoverClosingTimeout(){
 	MotorDriver_Stop();
+	EventGenerator_StartReading( RainSensorReadHandle, 1 );
 }
 
 void onRainBoxCoverClosingTimeout(){
 	MotorDriver_Stop();
+	EventGenerator_StartReading( RainSensorReadHandle, 0 );
 }
 
 void onSamplingBoxFillingTimeout(){
@@ -200,9 +203,12 @@ void onRainSensorUpdate( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
 		StateMachine_Act( RAIN_STARTED, RainChangeDispatcher );
 		ModbusSlave_SetRegisterValue( &rainingRegHandle, 1 );
+		// Stop Reading on Rain Sensor until cover has closed or timeout has expired.
+		EventGenerator_StopReading( RainSensorReadHandle );
 	}else{
 		StateMachine_Act( RAIN_FINISHED, RainChangeDispatcher );
 		ModbusSlave_SetRegisterValue( &rainingRegHandle, 0 );
+		EventGenerator_StopReading( RainSensorReadHandle );
 	}
 }
 
@@ -239,6 +245,8 @@ void onSamplingBoxTopSensorChange( uint8_t newState ){
 void onRainBoxCoverSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
 		StateMachine_Act( RAIN_BOX_COVER_CLOSED, rainBoxCoverChangeActuator );
+		// we can continue on reading rain sensor
+		EventGenerator_StartReading( RainSensorReadHandle, 0 );
 	}else{
 		StateMachine_Act( RAIN_BOX_COVER_OPENED, rainBoxCoverChangeActuator );
 	}
@@ -247,6 +255,8 @@ void onRainBoxCoverSensorChange( uint8_t newState ){
 void onDustBoxCoverSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
 		StateMachine_Act( DUST_BOX_COVER_CLOSED, dustBoxCoverChangeActuator );
+		// we can continue on reading rain sensor
+		EventGenerator_StartReading( RainSensorReadHandle, 1 );
 	}
 	else{
 		StateMachine_Act( DUST_BOX_COVER_OPENED, dustBoxCoverChangeActuator );
@@ -318,7 +328,7 @@ int main(void)
   /* USER CODE BEGIN Init */
   StateMachine_Init();
   FutureContracts_Init();
-  EventGenerator_AddInput( 100, 10, GPIO_PIN_RESET, USER_Btn_GPIO_Port, USER_Btn_Pin, onRainSensorUpdate );
+  RainSensorReadHandle = EventGenerator_AddInput( 100, 10, GPIO_PIN_RESET, USER_Btn_GPIO_Port, USER_Btn_Pin, onRainSensorUpdate );
   EventGenerator_AddInput( 100, 10, GPIO_PIN_RESET, GPIOD, GPIO_PIN_0, onDustBoxCoverSensorChange );
   EventGenerator_AddInput( 100, 10, GPIO_PIN_RESET, GPIOD, GPIO_PIN_1, onRainBoxCoverSensorChange );
 
