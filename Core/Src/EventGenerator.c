@@ -28,6 +28,7 @@ EventSystemHandler_t EventGenerator_AddInput(
 	_newInput->PeriodCounter = period;
 	_newInput->Callback = transitionCallback;
 	_newInput->Changed = 0;
+	_newInput->Active = 1;
 	_inputsCount++;
 	return returnValue;
 }	
@@ -38,6 +39,9 @@ void EventGenerator_ReadInputs( uint8_t readPeriod ){
 		_currentInput = &(_inputs[k]);
 		if( _currentInput == NULL ){
 			continue; // assert here
+		}
+		if( _currentInput->Active == 0 ){
+			continue; // pass inactive input channels
 		}
 		_currentInput->PeriodCounter -= readPeriod;
 		if( _currentInput->PeriodCounter <= 0 )
@@ -66,4 +70,35 @@ void EventGenerator_ReadInputs( uint8_t readPeriod ){
 			}
 		}
 	}
+}
+
+EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg ){
+	DigitalInputState* _currentInput = NULL;
+	if( arg >= _inputsCount ){
+		return EG_FAILED;
+	}
+	if( arg < 0  ){
+		return EG_FAILED;
+	}
+	_currentInput = &(_inputs[arg]);
+	if( _currentInput == NULL ){
+		return EG_FAILED; 
+	}
+	_currentInput->Active = 1;
+	return EG_SUCCESS;
+}
+EventGenerator_Result EventGenerator_StopReading( EventSystemHandler_t arg ){
+	DigitalInputState* _currentInput = NULL;
+	if( arg >= _inputsCount ){
+		return EG_FAILED;
+	}
+	if( arg < 0  ){
+		return EG_FAILED;
+	}
+	_currentInput = &(_inputs[arg]);
+	if( _currentInput == NULL ){
+		return EG_FAILED; 
+	}
+	_currentInput->Active = 0;
+	return EG_SUCCESS;
 }
