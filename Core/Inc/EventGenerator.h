@@ -9,6 +9,10 @@ typedef void(*TransitionCallback)( uint8_t newState);
 
 typedef int16_t EventSystemHandler_t;
 
+typedef enum EventGenerator_Result{
+   EG_SUCCESS = 0,
+   EG_FAILED = 1
+}EventGenerator_Result;
 
 typedef struct DigitalInputState{
 	uint16_t Period;
@@ -20,6 +24,7 @@ typedef struct DigitalInputState{
 	uint16_t Pin;
 	TransitionCallback Callback;
 	uint8_t Changed;
+	uint8_t Active;
 }DigitalInputState;
 
 EventSystemHandler_t EventGenerator_AddInput(
@@ -32,6 +37,8 @@ EventSystemHandler_t EventGenerator_AddInput(
 );
 
 void EventGenerator_ReadInputs( uint8_t readPeriod );
+EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t );
+EventGenerator_Result EventGenerator_StopReading( EventSystemHandler_t );
 
 
 
