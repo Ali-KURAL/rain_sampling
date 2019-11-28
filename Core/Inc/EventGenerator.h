@@ -37,8 +37,8 @@ EventSystemHandler_t EventGenerator_AddInput(
 );
 
 void EventGenerator_ReadInputs( uint8_t readPeriod );
-EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t );
-EventGenerator_Result EventGenerator_StopReading( EventSystemHandler_t );
+EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg );
+EventGenerator_Result EventGenerator_StopReading( EventSystemHandler_t arg );
 
 
 
