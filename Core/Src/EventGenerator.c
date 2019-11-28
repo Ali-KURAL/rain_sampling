@@ -72,7 +72,7 @@ void EventGenerator_ReadInputs( uint8_t readPeriod ){
 	}
 }
 
-EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg ){
+EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg, uint8_t initialState ){
 	DigitalInputState* _currentInput = NULL;
 	if( arg >= _inputsCount ){
 		return EG_FAILED;
@@ -85,6 +85,7 @@ EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg ){
 		return EG_FAILED; 
 	}
 	_currentInput->Active = 1;
+	_currentInput->LastState = initialState;
 	return EG_SUCCESS;
 }
 EventGenerator_Result EventGenerator_StopReading( EventSystemHandler_t arg ){
