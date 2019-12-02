@@ -109,12 +109,12 @@ ModbusRegister_Handle_t userLed3RegHandle = { -1 ,0 };
 // Timer Callbacks
 void onDustBoxCoverClosingTimeout(){
 	MotorDriver_Stop();
-	EventGenerator_StartReading( RainSensorReadHandle, 1 );
+	EventGenerator_StartReading( RainSensorReadHandle, 2 );
 }
 
 void onRainBoxCoverClosingTimeout(){
 	MotorDriver_Stop();
-	EventGenerator_StartReading( RainSensorReadHandle, 0 );
+	EventGenerator_StartReading( RainSensorReadHandle, 2 );
 }
 
 void onSamplingBoxFillingTimeout(){
@@ -246,7 +246,7 @@ void onRainBoxCoverSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
 		StateMachine_Act( RAIN_BOX_COVER_CLOSED, rainBoxCoverChangeActuator );
 		// we can continue on reading rain sensor
-		EventGenerator_StartReading( RainSensorReadHandle, 0 );
+		EventGenerator_StartReading( RainSensorReadHandle, 2 );
 	}else{
 		StateMachine_Act( RAIN_BOX_COVER_OPENED, rainBoxCoverChangeActuator );
 	}
@@ -256,7 +256,7 @@ void onDustBoxCoverSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
 		StateMachine_Act( DUST_BOX_COVER_CLOSED, dustBoxCoverChangeActuator );
 		// we can continue on reading rain sensor
-		EventGenerator_StartReading( RainSensorReadHandle, 1 );
+		EventGenerator_StartReading( RainSensorReadHandle, 2 );
 	}
 	else{
 		StateMachine_Act( DUST_BOX_COVER_OPENED, dustBoxCoverChangeActuator );
