@@ -86,6 +86,9 @@ EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg, uin
 	}
 	_currentInput->Active = 1;
 	_currentInput->LastState = initialState;
+	_currentInput->Changed = 0;
+	_currentInput->Counter = 0;
+	_currentInput->PeriodCounter = _currentInput->Period;
 	return EG_SUCCESS;
 }
 EventGenerator_Result EventGenerator_StopReading( EventSystemHandler_t arg ){
