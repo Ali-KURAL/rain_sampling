@@ -150,7 +150,7 @@ void onBme280ReadPeriodTimeout(){
 }
 
 /* Actuator dispatchers */
-void RainChangeDispatcher( SystemCommand action,const SystemState* state){
+void actionDispatcher( SystemCommand action,const SystemState* state){
 	switch( action ){
 		case TURN_COVER_MOTOR_TO_RAIN_BOX:
 			// set up timer
@@ -176,34 +176,20 @@ void RainChangeDispatcher( SystemCommand action,const SystemState* state){
 			ValveDriver_CloseSamplingBoxValve();
 			ModbusSlave_SetRegisterValue( &sampleBoxValveRegHandle, 0 );
 			break;
+		case OPEN_DISCHARGING_VALVE:
+			ValveDriver_OpenDischarcingValve();
+			ModbusSlave_SetRegisterValue( &dischargeValveRegHandle, 1 );
+			break;
+		case OPEN_SAMPLING_BOX_VALVE:
+			samplingBoxFillTimeoutHandle = FutureContracts_Register( TIMEOUT_FOR_SAMPLING_BOX_FILLING, 1, onSamplingBoxFillingTimeout );
+			ValveDriver_OpenSamplingBoxValve();
+			ModbusSlave_SetRegisterValue( &sampleBoxValveRegHandle, 1 );
+			break;
 		default:
 			break;
 	}
 }
 
-void valveDispatcher(SystemCommand action, const SystemState* state ){
-	switch( action ){
-	case OPEN_DISCHARGING_VALVE:
-		ValveDriver_OpenDischarcingValve();
-		ModbusSlave_SetRegisterValue( &dischargeValveRegHandle, 1 );
-		break;
-	case CLOSE_DISCHARGING_VALVE:
-		ValveDriver_CloseDischarcingValve();
-		ModbusSlave_SetRegisterValue( &dischargeValveRegHandle, 0 );
-		break;
-	case OPEN_SAMPLING_BOX_VALVE:
-		samplingBoxFillTimeoutHandle = FutureContracts_Register( TIMEOUT_FOR_SAMPLING_BOX_FILLING, 1, onSamplingBoxFillingTimeout );
-		ValveDriver_OpenSamplingBoxValve();
-		ModbusSlave_SetRegisterValue( &sampleBoxValveRegHandle, 1 );
-		break;
-	case CLOSE_SAMPLING_BOX_VALVE:
-		ValveDriver_CloseSamplingBoxValve();
-		ModbusSlave_SetRegisterValue( &sampleBoxValveRegHandle, 0 );
-		break;
-	default:
-		break;
-	}
-}
 
 void rainBoxCoverChangeActuator( SystemCommand action, const SystemState* state ){
 	switch(action){
@@ -237,40 +223,40 @@ void dustBoxCoverChangeActuator( SystemCommand action, const SystemState* state 
 void onRainSensorUpdate( uint8_t newState ){
 	EventGenerator_StopReading( RainSensorReadHandle );
 	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_STARTED, RainChangeDispatcher );
+		StateMachine_Act( RAIN_STARTED, actionDispatcher );
 		ModbusSlave_SetRegisterValue( &rainingRegHandle, 1 );
 	}else{
-		StateMachine_Act( RAIN_FINISHED, RainChangeDispatcher );
+		StateMachine_Act( RAIN_FINISHED, actionDispatcher );
 		ModbusSlave_SetRegisterValue( &rainingRegHandle, 0 );
 	}
 }
 
 void onRainBoxTopSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_BOX_FILLED, valveDispatcher );
+		StateMachine_Act( RAIN_BOX_FILLED, actionDispatcher );
 		ModbusSlave_SetRegisterValue( &rainBoxFullRegHandle, 1 );
 	}else{
-		StateMachine_Act( RAIN_BOX_STARTED_DRAINING, valveDispatcher );
+		StateMachine_Act( RAIN_BOX_STARTED_DRAINING, actionDispatcher );
 		ModbusSlave_SetRegisterValue( &rainBoxFullRegHandle, 0 );
 	}
 }
 
 void onRainBoxBottomSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_BOX_STARTED_FILLING, valveDispatcher );
+		StateMachine_Act( RAIN_BOX_STARTED_FILLING, actionDispatcher );
 		ModbusSlave_SetRegisterValue( &rainBoxEmptyRegHandle, 0 );
 	}else{
-		StateMachine_Act( RAIN_BOX_EMPTIED, valveDispatcher );
+		StateMachine_Act( RAIN_BOX_EMPTIED, actionDispatcher );
 		ModbusSlave_SetRegisterValue( &rainBoxEmptyRegHandle, 1 );
 	}
 }
 
 void onSamplingBoxTopSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( SAMPLING_BOX_FILLED, valveDispatcher );
+		StateMachine_Act( SAMPLING_BOX_FILLED, actionDispatcher );
 		ModbusSlave_SetRegisterValue( &sampleBoxFullRegHandle, 1 );
 	}else{
-		StateMachine_Act( SAMPLING_BOX_STARTED_DRAINING, valveDispatcher );
+		StateMachine_Act( SAMPLING_BOX_STARTED_DRAINING, actionDispatcher );
 		ModbusSlave_SetRegisterValue( &sampleBoxFullRegHandle, 0 );
 	}
 }
