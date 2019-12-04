@@ -47,9 +47,12 @@ void StateMachine_Act( SystemAction action, StateDispatch dispatch ){
 				/* Info 1 : Yağmur sensörü ilk yağmuru algıladığı durumda motor çalışacak
 				 * ve kapak toz toplama haznesini kapatacaktır.
 				 */
+				// Eger kapak toz kutusu uzerinde degilse
 				// Turn motor to Dust box
-				_state.coverMotor = TURNING_TO_DUST_BOX;
-				dispatch( TURN_COVER_MOTOR_TO_DUST_BOX, &_state );
+				if( _state.cover != ON_DUST_BOX ){
+					_state.coverMotor = TURNING_TO_DUST_BOX;
+					dispatch( TURN_COVER_MOTOR_TO_DUST_BOX, &_state );
+				}
 				 /*
 				 * Info 2 : Yagis basladigi anda vana1 ve vana 2 kapali durumda olacak ve Yagmur suyu
 				 *  toplama kabina yagmur toplanmaya baslayacaktir.
@@ -78,9 +81,13 @@ void StateMachine_Act( SystemAction action, StateDispatch dispatch ){
 		case RAIN_FINISHED:
 			if( _state.isRaining ){
 				_state.isRaining = false;
-				// yagmur bittigine gore kapagi yagmur kutusuna tasiyabiliriz
-				_state.coverMotor = TURNING_TO_RAIN_BOX;
-				dispatch( TURN_COVER_MOTOR_TO_RAIN_BOX, &_state );
+
+				// yagmur bittiyse ve kapak yagmur kutusu uzerinde degilse
+				// kapagi yagmur kutusuna tasiyabiliriz
+				if( _state.cover != ON_RAIN_BOX ){
+					_state.coverMotor = TURNING_TO_RAIN_BOX;
+					dispatch( TURN_COVER_MOTOR_TO_RAIN_BOX, &_state );
+				}
 
 				// Ornek alma islemi tamamlandi mi tamamlanmadi mi bakalim..
 				if( _state.isSamplingBoxFull ){
