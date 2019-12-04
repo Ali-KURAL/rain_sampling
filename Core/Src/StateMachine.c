@@ -85,9 +85,9 @@ void StateMachine_Act( SystemAction action, StateDispatch dispatch ){
 				// Ornek alma islemi tamamlandi mi tamamlanmadi mi bakalim..
 				if( _state.isSamplingBoxFull ){
 					/* Info : Ornek alma islemi tamamlandiktan sonra Yağmur durana kadar vana 1 açık kalacaktır.
-					*/
+					*/  // Ornek alma islemi tamamlanmis, yagmur bitmis. kapatabiliriz
 					_state.discharcingValve = VALVE_OPEN;
-					dispatch( OPEN_DISCHARGING_VALVE, &_state );
+					dispatch( CLOSE_DISCHARGING_VALVE, &_state );
 				}else{
 					// Ornek alma islemi tamamlanmadi ama yagmur bittigi icin haznede dolan suyu, orneklemeye atiyoruz
 					_state.samplingBoxValve = VALVE_OPEN;
