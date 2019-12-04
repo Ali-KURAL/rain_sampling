@@ -38,6 +38,8 @@
 /* USER CODE BEGIN PTD */
 
 // Configuration
+#define USE_IWDG  1
+
 
 #define TIMEOUT_FOR_COVER_CLOSING 			15000
 #define TIMEOUT_FOR_SAMPLING_BOX_FILLING 	20000
@@ -55,6 +57,9 @@
 #define RAIN_BOX_COVER_STATUS_REGISTER  	16
 #define DUST_BOX_COVER_STATUS_REGISTER		17
 
+#define MOTOR_DIR_DUST_BOX_REGISTER      	18
+#define MOTOR_DIR_RAIN_BOX_REGISTER			19
+#define MOTOR_IS_TURNING_REGISTER		  	20
 
 /* USER CODE END PTD */
 
@@ -110,18 +115,29 @@ ModbusRegister_Handle_t sampleBoxValveRegHandle = { -1 ,0 };
 ModbusRegister_Handle_t rainBoxCoverRegHandle = { -1 ,0 };
 ModbusRegister_Handle_t dustBoxCoverRegHandle = { -1 ,0 };
 
+ModbusRegister_Handle_t motorTurningDustBoxRegHandle = { -1 ,0 };
+ModbusRegister_Handle_t motorTurningRainBoxRegHandle = { -1 ,0 };
+ModbusRegister_Handle_t motorIsTurningRegHandle = { -1 ,0 };
+
+
 ModbusRegister_Handle_t userLed1RegHandle = { -1 ,0 };
 ModbusRegister_Handle_t userLed2RegHandle = { -1 ,0 };
 ModbusRegister_Handle_t userLed3RegHandle = { -1 ,0 };
 // Timer Callbacks
 void onDustBoxCoverClosingTimeout(){
 	MotorDriver_Stop();
-	EventGenerator_StartReading( RainSensorReadHandle, 2 );
+	ModbusSlave_SetRegisterValue( &motorTurningDustBoxRegHandle, 0 );
+	ModbusSlave_SetRegisterValue( &motorTurningRainBoxRegHandle, 0 );
+	ModbusSlave_SetRegisterValue( &motorIsTurningRegHandle, 0 );
+	EventGenerator_StartReading( RainSensorReadHandle, 1 );
 }
 
 void onRainBoxCoverClosingTimeout(){
 	MotorDriver_Stop();
-	EventGenerator_StartReading( RainSensorReadHandle, 2 );
+	ModbusSlave_SetRegisterValue( &motorTurningDustBoxRegHandle, 0 );
+	ModbusSlave_SetRegisterValue( &motorTurningRainBoxRegHandle, 0 );
+	ModbusSlave_SetRegisterValue( &motorIsTurningRegHandle, 0 );
+	EventGenerator_StartReading( RainSensorReadHandle, 0 );
 }
 
 void onSamplingBoxFillingTimeout(){
@@ -140,11 +156,17 @@ void RainChangeDispatcher( SystemCommand action,const SystemState* state){
 			// set up timer
 			rainBoxCoverTimeoutHandle = FutureContracts_Register( TIMEOUT_FOR_COVER_CLOSING, 1, onRainBoxCoverClosingTimeout );
 			MotorDriver_CloseRainBox();
+			ModbusSlave_SetRegisterValue( &motorTurningDustBoxRegHandle, 0 );
+			ModbusSlave_SetRegisterValue( &motorTurningRainBoxRegHandle, 1 );
+			ModbusSlave_SetRegisterValue( &motorIsTurningRegHandle, 1 );
 			break;
 		case TURN_COVER_MOTOR_TO_DUST_BOX:
 			// set up timer
 			dustBoxCoverTimeoutHandle = FutureContracts_Register( TIMEOUT_FOR_COVER_CLOSING, 1, onDustBoxCoverClosingTimeout );
 			MotorDriver_CloseDustBox();
+			ModbusSlave_SetRegisterValue( &motorTurningDustBoxRegHandle, 1 );
+			ModbusSlave_SetRegisterValue( &motorTurningRainBoxRegHandle, 0 );
+			ModbusSlave_SetRegisterValue( &motorIsTurningRegHandle, 1 );
 			break;
 		case CLOSE_DISCHARGING_VALVE:
 			ValveDriver_CloseDischarcingValve();
@@ -188,6 +210,9 @@ void rainBoxCoverChangeActuator( SystemCommand action, const SystemState* state 
 		case STOP_COVER_MOTOR:
 			FutureContracts_Unregister(&rainBoxCoverTimeoutHandle);
 			MotorDriver_onRainBoxClosed();
+			ModbusSlave_SetRegisterValue( &motorTurningDustBoxRegHandle, 0 );
+			ModbusSlave_SetRegisterValue( &motorTurningRainBoxRegHandle, 0 );
+			ModbusSlave_SetRegisterValue( &motorIsTurningRegHandle, 0 );
 			break;
 		default:
 			break;
@@ -199,6 +224,9 @@ void dustBoxCoverChangeActuator( SystemCommand action, const SystemState* state 
 		case STOP_COVER_MOTOR:
 			FutureContracts_Unregister(&dustBoxCoverTimeoutHandle);
 			MotorDriver_onDustBoxClosed();
+			ModbusSlave_SetRegisterValue( &motorTurningDustBoxRegHandle, 0 );
+			ModbusSlave_SetRegisterValue( &motorTurningRainBoxRegHandle, 0 );
+			ModbusSlave_SetRegisterValue( &motorIsTurningRegHandle, 0 );
 			break;
 		default:
 			break;
@@ -207,14 +235,14 @@ void dustBoxCoverChangeActuator( SystemCommand action, const SystemState* state 
 
 /* Sensor state changes */
 void onRainSensorUpdate( uint8_t newState ){
+	EventGenerator_StopReading( RainSensorReadHandle );
 	if( newState == GPIO_PIN_SET ){
-		ModbusSlave_SetRegisterValue( &rainingRegHandle, 1 );
 		StateMachine_Act( RAIN_STARTED, RainChangeDispatcher );
+		ModbusSlave_SetRegisterValue( &rainingRegHandle, 1 );
 	}else{
 		StateMachine_Act( RAIN_FINISHED, RainChangeDispatcher );
 		ModbusSlave_SetRegisterValue( &rainingRegHandle, 0 );
 	}
-	EventGenerator_StopReading( RainSensorReadHandle );
 }
 
 void onRainBoxTopSensorChange( uint8_t newState ){
@@ -251,9 +279,8 @@ void onRainBoxCoverSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
 		ModbusSlave_SetRegisterValue( &rainBoxCoverRegHandle, 1 );
 		// we can continue on reading rain sensor
-		EventGenerator_StartReading( RainSensorReadHandle, 2 );
+		EventGenerator_StartReading( RainSensorReadHandle, 0 );
 		StateMachine_Act( RAIN_BOX_COVER_CLOSED, rainBoxCoverChangeActuator );
-
 	}else{
 		ModbusSlave_SetRegisterValue( &rainBoxCoverRegHandle, 0 );
 		StateMachine_Act( RAIN_BOX_COVER_OPENED, rainBoxCoverChangeActuator );
@@ -264,7 +291,7 @@ void onDustBoxCoverSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
 		ModbusSlave_SetRegisterValue( &dustBoxCoverRegHandle, 1 );
 		// we can continue on reading rain sensor
-		EventGenerator_StartReading( RainSensorReadHandle, 2 );
+		EventGenerator_StartReading( RainSensorReadHandle, 1 );
 		StateMachine_Act( DUST_BOX_COVER_CLOSED, dustBoxCoverChangeActuator );
 	}
 	else{
@@ -276,15 +303,15 @@ void onDustBoxCoverSensorChange( uint8_t newState ){
 
 // Modbus Register Callbacks
 void led1RegOnWrite(uint16_t value){
-	HAL_GPIO_WritePin(LD1_GPIO_Port,LD1_Pin,(GPIO_PinState)value);
+	//HAL_GPIO_WritePin(LD1_GPIO_Port,LD1_Pin,(GPIO_PinState)value);
 }
 
 void led2RegOnWrite(uint16_t value){
-	HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,(GPIO_PinState)value);
+	//HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,(GPIO_PinState)value);
 }
 
 void led3RegOnWrite(uint16_t value){
-	HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,(GPIO_PinState)value);
+	//HAL_GPIO_WritePin(LD3_GPIO_Port,LD3_Pin,(GPIO_PinState)value);
 }
 
 /* USER CODE END PFP */
@@ -359,7 +386,9 @@ int main(void)
   //MX_ETH_Init();
   MX_USART3_UART_Init();
   //MX_USB_OTG_FS_PCD_Init();
+#ifdef USE_IWDG
   MX_IWDG_Init();
+#endif
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -407,6 +436,11 @@ int main(void)
 
   rainBoxCoverRegHandle = ModbusSlave_CreateInputStatus( RAIN_BOX_COVER_STATUS_REGISTER, 0 );
   dustBoxCoverRegHandle = ModbusSlave_CreateInputStatus( DUST_BOX_COVER_STATUS_REGISTER, 0 );
+
+  motorTurningDustBoxRegHandle = ModbusSlave_CreateInputStatus( MOTOR_DIR_DUST_BOX_REGISTER, 0 );
+  motorTurningRainBoxRegHandle = ModbusSlave_CreateInputStatus( MOTOR_DIR_RAIN_BOX_REGISTER, 0 );
+  motorIsTurningRegHandle = ModbusSlave_CreateInputStatus( MOTOR_IS_TURNING_REGISTER, 0 );
+
 
   userLed1RegHandle = ModbusSlave_CreateCoilStatus(10, 0 );
   userLed2RegHandle = ModbusSlave_CreateCoilStatus(11, 0 );
@@ -553,7 +587,7 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_64;
   hiwdg.Init.Window = 4095;
   hiwdg.Init.Reload = 4095;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
