@@ -7,7 +7,7 @@
 
 typedef void(*TransitionCallback)( uint8_t newState);
 
-typedef int16_t EventSystemHandler_t;
+typedef uint8_t EventSystemHandler_t;
 
 typedef enum EventGenerator_Result{
    EG_SUCCESS = 0,
@@ -37,7 +37,7 @@ EventSystemHandler_t EventGenerator_AddInput(
 );
 
 void EventGenerator_ReadInputs( uint8_t readPeriod );
-EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg, uint8_t initialState);
+EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg, uint8_t initialState );
 EventGenerator_Result EventGenerator_StopReading( EventSystemHandler_t arg );
 
 

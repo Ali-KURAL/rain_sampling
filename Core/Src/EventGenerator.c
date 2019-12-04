@@ -4,7 +4,7 @@
 #define DIGITAL_INPUTS_SIZE 		16
 
 DigitalInputState _inputs[DIGITAL_INPUTS_SIZE];
-uint8_t _inputsCount;
+EventSystemHandler_t _inputsCount;
 
 EventSystemHandler_t EventGenerator_AddInput(
 	uint16_t period,
@@ -82,7 +82,11 @@ EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg, uin
 	}
 	_currentInput = &(_inputs[arg]);
 	if( _currentInput == NULL ){
-		return EG_FAILED; 
+		return EG_FAILED;
+	}
+	if( _currentInput->Active == 1 ){
+		// already actve
+		return EG_SUCCESS;
 	}
 	_currentInput->Active = 1;
 	_currentInput->LastState = initialState;
@@ -91,17 +95,18 @@ EventGenerator_Result EventGenerator_StartReading( EventSystemHandler_t arg, uin
 	_currentInput->PeriodCounter = _currentInput->Period;
 	return EG_SUCCESS;
 }
+
 EventGenerator_Result EventGenerator_StopReading( EventSystemHandler_t arg ){
 	DigitalInputState* _currentInput = NULL;
 	if( arg >= _inputsCount ){
 		return EG_FAILED;
 	}
-	if( arg < 0  ){
+	if( arg > 100  ){
 		return EG_FAILED;
 	}
 	_currentInput = &(_inputs[arg]);
 	if( _currentInput == NULL ){
-		return EG_FAILED; 
+		return EG_FAILED;
 	}
 	_currentInput->Active = 0;
 	return EG_SUCCESS;

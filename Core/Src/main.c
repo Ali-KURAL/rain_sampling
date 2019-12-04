@@ -52,6 +52,9 @@
 #define DISCHARGING_VALVE_STATUS_REGISTER  	14
 #define SAMPLE_BOX_VALVE_STATUS_REGISTER	15
 
+#define RAIN_BOX_COVER_STATUS_REGISTER  	16
+#define DUST_BOX_COVER_STATUS_REGISTER		17
+
 
 /* USER CODE END PTD */
 
@@ -89,19 +92,23 @@ static void MX_IWDG_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
-EventSystemHandler_t RainSensorReadHandle = -1;
+EventSystemHandler_t RainSensorReadHandle = 200;
 
 FutureContract_Handle_t dustBoxCoverTimeoutHandle = -1;
 FutureContract_Handle_t rainBoxCoverTimeoutHandle = -1;
 FutureContract_Handle_t samplingBoxFillTimeoutHandle = -1;
 
 ModbusRegister_Handle_t rainingRegHandle = { -1 ,0 };
+
 ModbusRegister_Handle_t rainBoxFullRegHandle = { -1 ,0 };
 ModbusRegister_Handle_t rainBoxEmptyRegHandle = { -1 ,0 };
 ModbusRegister_Handle_t sampleBoxFullRegHandle = { -1 ,0 };
 
 ModbusRegister_Handle_t dischargeValveRegHandle = { -1 ,0 };
 ModbusRegister_Handle_t sampleBoxValveRegHandle = { -1 ,0 };
+
+ModbusRegister_Handle_t rainBoxCoverRegHandle = { -1 ,0 };
+ModbusRegister_Handle_t dustBoxCoverRegHandle = { -1 ,0 };
 
 ModbusRegister_Handle_t userLed1RegHandle = { -1 ,0 };
 ModbusRegister_Handle_t userLed2RegHandle = { -1 ,0 };
@@ -372,7 +379,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 2048);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -394,6 +401,9 @@ int main(void)
 
   dischargeValveRegHandle = ModbusSlave_CreateInputStatus( DISCHARGING_VALVE_STATUS_REGISTER, 0 );
   sampleBoxValveRegHandle = ModbusSlave_CreateInputStatus( SAMPLE_BOX_VALVE_STATUS_REGISTER, 0 );
+
+  rainBoxCoverRegHandle = ModbusSlave_CreateInputStatus( RAIN_BOX_COVER_STATUS_REGISTER, 0 );
+  dustBoxCoverRegHandle = ModbusSlave_CreateInputStatus( DUST_BOX_COVER_STATUS_REGISTER, 0 );
 
   userLed1RegHandle = ModbusSlave_CreateCoilStatus(10, 0 );
   userLed2RegHandle = ModbusSlave_CreateCoilStatus(11, 0 );
