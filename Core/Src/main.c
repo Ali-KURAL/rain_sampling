@@ -208,15 +208,13 @@ void dustBoxCoverChangeActuator( SystemCommand action, const SystemState* state 
 /* Sensor state changes */
 void onRainSensorUpdate( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_STARTED, RainChangeDispatcher );
 		ModbusSlave_SetRegisterValue( &rainingRegHandle, 1 );
-		// Stop Reading on Rain Sensor until cover has closed or timeout has expired.
-		EventGenerator_StopReading( RainSensorReadHandle );
+		StateMachine_Act( RAIN_STARTED, RainChangeDispatcher );
 	}else{
 		StateMachine_Act( RAIN_FINISHED, RainChangeDispatcher );
 		ModbusSlave_SetRegisterValue( &rainingRegHandle, 0 );
-		EventGenerator_StopReading( RainSensorReadHandle );
 	}
+	EventGenerator_StopReading( RainSensorReadHandle );
 }
 
 void onRainBoxTopSensorChange( uint8_t newState ){
@@ -251,21 +249,26 @@ void onSamplingBoxTopSensorChange( uint8_t newState ){
 
 void onRainBoxCoverSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( RAIN_BOX_COVER_CLOSED, rainBoxCoverChangeActuator );
+		ModbusSlave_SetRegisterValue( &rainBoxCoverRegHandle, 1 );
 		// we can continue on reading rain sensor
 		EventGenerator_StartReading( RainSensorReadHandle, 2 );
+		StateMachine_Act( RAIN_BOX_COVER_CLOSED, rainBoxCoverChangeActuator );
+
 	}else{
+		ModbusSlave_SetRegisterValue( &rainBoxCoverRegHandle, 0 );
 		StateMachine_Act( RAIN_BOX_COVER_OPENED, rainBoxCoverChangeActuator );
 	}
 }
 
 void onDustBoxCoverSensorChange( uint8_t newState ){
 	if( newState == GPIO_PIN_SET ){
-		StateMachine_Act( DUST_BOX_COVER_CLOSED, dustBoxCoverChangeActuator );
+		ModbusSlave_SetRegisterValue( &dustBoxCoverRegHandle, 1 );
 		// we can continue on reading rain sensor
 		EventGenerator_StartReading( RainSensorReadHandle, 2 );
+		StateMachine_Act( DUST_BOX_COVER_CLOSED, dustBoxCoverChangeActuator );
 	}
 	else{
+		ModbusSlave_SetRegisterValue( &dustBoxCoverRegHandle, 0 );
 		StateMachine_Act( DUST_BOX_COVER_OPENED, dustBoxCoverChangeActuator );
 	}
 }
