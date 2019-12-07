@@ -118,18 +118,14 @@ void StateMachine_Act( SystemAction action, StateDispatch dispatch ){
 			break;
 		case RAIN_BOX_EMPTIED:
 			_state.isRainBoxEmpty = true;
-			/* Info : Vana2, 2. Şamandıra kontağı kapanana kadar açık kalacaktır.
-			 * 2. Şamandıra kontağı kapandıktan sonra numune toplama işlemi tamamlanmış olacaktır.
-			 * Daha sonra vana2 kapatılarak vana 1 açılacaktır.
-			 */
-			// yagmurun tam yagmadigi durumlar goz onune alinarak yagmur kutusu bosaldiginda valf degistirmiyoruz
-			//_state.samplingBoxValve = VALVE_CLOSED;
-			//dispatch( CLOSE_SAMPLING_BOX_VALVE, &_state );
+			if( !_state.isRaining ){
+				_state.samplingBoxValve = VALVE_CLOSED;
+				dispatch( CLOSE_SAMPLING_BOX_VALVE, &_state );
 
-			//_state.discharcingValve = VALVE_OPEN;
-			//dispatch( OPEN_DISCHARGING_VALVE, &_state );
+				_state.discharcingValve = VALVE_CLOSED;
+				dispatch( CLOSE_DISCHARGING_VALVE, &_state );
+			}
 			break;
-
 		case SAMPLING_BOX_FILLED:
 			// Ornek alma islemi tamamlanmis demektir
 			_state.isSamplingBoxFull = true;
