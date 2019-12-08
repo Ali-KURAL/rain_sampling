@@ -38,7 +38,7 @@
 /* USER CODE BEGIN PTD */
 
 // Configuration
-#define USE_IWDG  1
+//#define USE_IWDG  1
 
 
 #define TIMEOUT_FOR_COVER_CLOSING 			15000
@@ -366,8 +366,10 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART3_UART_Init();
+#ifdef USE_IWDG
   MX_IWDG_Init();
-  MX_UART4_Init();
+#endif
+  //MX_UART4_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -429,6 +431,9 @@ int main(void)
   ModbusSlave_AddOnWriteCallback(&userLed2RegHandle, led2RegOnWrite);
   ModbusSlave_AddOnWriteCallback(&userLed3RegHandle, led3RegOnWrite);
 
+  HAL_GPIO_TogglePin( LD2_GPIO_Port, LD2_Pin );
+  HAL_Delay(500);
+  HAL_GPIO_TogglePin( LD2_GPIO_Port, LD2_Pin );
 
   /* USER CODE END RTOS_THREADS */
 

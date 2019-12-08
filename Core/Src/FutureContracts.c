@@ -73,7 +73,7 @@ void FutureContracts_Work( uint16_t period ){
 				}
 				// Delete if it is done or refresh RemainingTimeout
 				if( _contract->Recurrence == 0 ){
-					FutureContracts_Unregister(k);
+					FutureContracts_Unregister(&k);
 				}else{
 					_contract->RemainingTimeout = _contract->Timeout;
 				}
