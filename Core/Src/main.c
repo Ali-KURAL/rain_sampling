@@ -32,7 +32,7 @@
 #include "Core/ModbusApp.h"
 #include "StateMachine.h"
 #include "BME280.h"
-
+#include "ModbusRegistersMap.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,27 +46,6 @@
 #define TIMEOUT_FOR_SAMPLING_BOX_FILLING 	20000
 #define MODBUS_SLAVE_DEV_ID   				7
 
-// Modbus Register Configuration
-#define RAINING_STATUS_REGISTER 			10
-#define RAIN_BOX_FULL_STATUS_REGISTER 		11
-#define RAIN_BOX_EMPTY_STATUS_REGISTER		12
-#define SAMPLE_BOX_FULL_STATUS_REGISTER		13
-
-#define DISCHARGING_VALVE_STATUS_REGISTER  	14
-#define SAMPLE_BOX_VALVE_STATUS_REGISTER	15
-
-#define RAIN_BOX_COVER_STATUS_REGISTER  	16
-#define DUST_BOX_COVER_STATUS_REGISTER		17
-
-#define MOTOR_DIR_DUST_BOX_REGISTER      	18
-#define MOTOR_DIR_RAIN_BOX_REGISTER			19
-#define MOTOR_IS_TURNING_REGISTER		  	20
-
-#define BME280_TEMPERATURE_1_REG			10
-#define BME280_TEMPERATURE_2_REG			11
-
-#define BME280_HUMIDITY_1_REG				12
-#define BME280_HUMIDITY_2_REG				13
 
 /* USER CODE END PTD */
 
@@ -107,37 +86,10 @@ FutureContract_Handle_t rainBoxCoverTimeoutHandle = -1;
 FutureContract_Handle_t samplingBoxFillTimeoutHandle = -1;
 FutureContract_Handle_t bme280ReadingTimerHandle = -1;
 
-ModbusRegister_Handle_t rainingRegHandle = { -1 ,0 };
-
-ModbusRegister_Handle_t rainBoxFullRegHandle = { -1 ,0 };
-ModbusRegister_Handle_t rainBoxEmptyRegHandle = { -1 ,0 };
-ModbusRegister_Handle_t sampleBoxFullRegHandle = { -1 ,0 };
-
-ModbusRegister_Handle_t dischargeValveRegHandle = { -1 ,0 };
-ModbusRegister_Handle_t sampleBoxValveRegHandle = { -1 ,0 };
-
-ModbusRegister_Handle_t rainBoxCoverRegHandle = { -1 ,0 };
-ModbusRegister_Handle_t dustBoxCoverRegHandle = { -1 ,0 };
-
-ModbusRegister_Handle_t motorTurningDustBoxRegHandle = { -1 ,0 };
-ModbusRegister_Handle_t motorTurningRainBoxRegHandle = { -1 ,0 };
-ModbusRegister_Handle_t motorIsTurningRegHandle = { -1 ,0 };
-
-
-ModbusRegister_Handle_t userLed1RegHandle = { -1 ,0 };
-ModbusRegister_Handle_t userLed2RegHandle = { -1 ,0 };
-ModbusRegister_Handle_t userLed3RegHandle = { -1 ,0 };
-
-
-// BME280 Registers
-ModbusRegister_Handle_t bme280TemperatureReg1 = { -1 ,0 };
-ModbusRegister_Handle_t bme280TemperatureReg2 = { -1 ,0 };
-
-ModbusRegister_Handle_t bme280HumidityReg1 = { -1 ,0 };
-ModbusRegister_Handle_t bme280HumidityReg2 = { -1 ,0 };
 
 ModbusRtu_Config_t    _rtuConfig;
-BME280_Config_t       _bme280Config;
+BME280_Config_t       _bme280_1_Config;
+BME280_Config_t       _bme280_2_Config;
 
 // Timer Callbacks
 void onDustBoxCoverClosingTimeout(){
@@ -162,19 +114,17 @@ void onSamplingBoxFillingTimeout(){
 }
 
 void onBme280ReadPeriodTimeout(){
-	float temperature, humidity;
+
 	BME280_Value temp_value, humd_value;
 
-	BME280_ReadTempC( &_bme280Config, &(temp_value.value ) );
-	BME280_ReadFloatHumidity( &_bme280Config, &(humd_value.value ) );
+	BME280_ReadTempC( &_bme280_1_Config, &(temp_value.value ) );
+	BME280_ReadFloatHumidity( &_bme280_1_Config, &(humd_value.value ) );
 
-	temp_value.value = 12.323;
-	humd_value.value = 23.422;
-	ModbusSlave_SetRegisterValue( &bme280TemperatureReg1, temp_value.array[1] << 8 | temp_value.array[0] );
-	ModbusSlave_SetRegisterValue( &bme280TemperatureReg2, temp_value.array[3] << 8 | temp_value.array[2] );
+	ModbusSlave_SetRegisterValue( &bme280_1_TemperatureReg1, temp_value.array[1] << 8 | temp_value.array[0] );
+	ModbusSlave_SetRegisterValue( &bme280_1_TemperatureReg2, temp_value.array[3] << 8 | temp_value.array[2] );
 
-	ModbusSlave_SetRegisterValue( &bme280HumidityReg1, humd_value.array[1] << 8 | humd_value.array[0] );
-	ModbusSlave_SetRegisterValue( &bme280HumidityReg2, humd_value.array[3	] << 8 | humd_value.array[2] );
+	ModbusSlave_SetRegisterValue( &bme280_1_HumidityReg1, humd_value.array[1] << 8 | humd_value.array[0] );
+	ModbusSlave_SetRegisterValue( &bme280_1_HumidityReg2, humd_value.array[3] << 8 | humd_value.array[2] );
 	//BME280_ReadTempC(_bme280Config, &temperature );
 	//BME280_ReadFloatHumidity( _bme280Config, &humidity );
 }
@@ -440,10 +390,15 @@ int main(void)
   /* add threads, ... */
 
   // BME280 Init
-  _bme280Config.id = 0x77;
-  _bme280Config.write = BME280_WriteHook;
-  _bme280Config.read = BME280_ReadHook;
-  BME280_Init( &_bme280Config );
+  _bme280_1_Config.id = 0x76;
+  _bme280_1_Config.write = BME280_WriteHook;
+  _bme280_1_Config.read = BME280_ReadHook;
+  BME280_Init( &_bme280_1_Config );
+
+  _bme280_2_Config.id = 0x77;
+  _bme280_2_Config.write = BME280_WriteHook;
+  _bme280_2_Config.read = BME280_ReadHook;
+  BME280_Init( &_bme280_2_Config );
 
   _rtuConfig.init = ModbusRtu_InitCallback;
   _rtuConfig.send = ModbusRtu_TransmitCallback;
@@ -474,11 +429,15 @@ int main(void)
   userLed2RegHandle = ModbusSlave_CreateCoilStatus( 11, 0 );
   userLed3RegHandle = ModbusSlave_CreateCoilStatus( 12, 0 );
 
-  bme280TemperatureReg1 = ModbusSlave_CreateInputRegister( BME280_TEMPERATURE_1_REG, 0 );
-  bme280TemperatureReg2 = ModbusSlave_CreateInputRegister( BME280_TEMPERATURE_2_REG, 0 );
+  bme280_1_TemperatureReg1 = ModbusSlave_CreateInputRegister( BME280_1_TEMPERATURE_1_REG, 0 );
+  bme280_1_TemperatureReg2 = ModbusSlave_CreateInputRegister( BME280_1_TEMPERATURE_2_REG, 0 );
+  bme280_1_HumidityReg1 = ModbusSlave_CreateInputRegister( BME280_1_HUMIDITY_1_REG, 0 );
+  bme280_1_HumidityReg2 = ModbusSlave_CreateInputRegister( BME280_1_HUMIDITY_2_REG, 0 );
 
-  bme280HumidityReg1 = ModbusSlave_CreateInputRegister( BME280_HUMIDITY_1_REG, 0 );
-  bme280HumidityReg2 = ModbusSlave_CreateInputRegister( BME280_HUMIDITY_2_REG, 0 );
+  bme280_2_TemperatureReg1 = ModbusSlave_CreateInputRegister( BME280_2_TEMPERATURE_1_REG, 0 );
+  bme280_2_TemperatureReg2 = ModbusSlave_CreateInputRegister( BME280_2_TEMPERATURE_2_REG, 0 );
+  bme280_2_HumidityReg1 = ModbusSlave_CreateInputRegister( BME280_2_HUMIDITY_1_REG, 0 );
+  bme280_2_HumidityReg2 = ModbusSlave_CreateInputRegister( BME280_2_HUMIDITY_2_REG, 0 );
 
   ModbusSlave_AddOnWriteCallback( &userLed1RegHandle, led1RegOnWrite);
   ModbusSlave_AddOnWriteCallback( &userLed2RegHandle, led2RegOnWrite);
