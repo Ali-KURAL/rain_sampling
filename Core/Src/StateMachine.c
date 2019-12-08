@@ -57,24 +57,19 @@ void StateMachine_Act( SystemAction action, StateDispatch dispatch ){
 				 * Info 2 : Yagis basladigi anda vana1 ve vana 2 kapali durumda olacak ve Yagmur suyu
 				 *  toplama kabina yagmur toplanmaya baslayacaktir.
 				 */
+				// Close Sampling Valve
+				_state.samplingBoxValve = VALVE_CLOSED;
+				dispatch( CLOSE_SAMPLING_BOX_VALVE, &_state );
 				if( _state.isSamplingBoxFull == false ){
 					// Close Discharcing Valve
 					_state.discharcingValve = VALVE_CLOSED;
 					dispatch( CLOSE_DISCHARGING_VALVE, &_state );
-
-					// Close Sampling Valve
-					_state.samplingBoxValve = VALVE_CLOSED;
-					dispatch( CLOSE_SAMPLING_BOX_VALVE, &_state );
 				}else{
 					// INFO3: Eger ornek alma haznesi dolu ise, direkt tahliye valfi acilacak.
 					// Bu durumda zaten rain box da su dolmasi soz konusu degil...
 					// Open Discharcing Valve
 					_state.discharcingValve = VALVE_OPEN;
 					dispatch( OPEN_DISCHARGING_VALVE, &_state );
-
-					// Close Sampling Valve
-					_state.samplingBoxValve = VALVE_CLOSED;
-					dispatch( CLOSE_SAMPLING_BOX_VALVE, &_state );
 				}
 			}
 			break;
@@ -94,7 +89,7 @@ void StateMachine_Act( SystemAction action, StateDispatch dispatch ){
 					/* Info : Ornek alma islemi tamamlandiktan sonra Yağmur durana kadar vana 1 açık kalacaktır.
 					*/  // Ornek alma islemi tamamlanmis, yagmur bitmis. kapatabiliriz
 					_state.discharcingValve = VALVE_OPEN;
-					dispatch( CLOSE_DISCHARGING_VALVE, &_state );
+					dispatch( OPEN_DISCHARGING_VALVE, &_state );
 				}else{
 					// Ornek alma islemi tamamlanmadi ama yagmur bittigi icin haznede dolan suyu, orneklemeye atiyoruz
 					_state.samplingBoxValve = VALVE_OPEN;
