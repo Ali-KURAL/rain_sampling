@@ -12,7 +12,6 @@
 
 typedef uint8_t BME280_Id;
 
-
 typedef enum BME280_Result{
 	BME280_SUCCESS = 0,
 	BME280_FAILED = 1
@@ -23,8 +22,8 @@ typedef union BME280_Value {
   char array[4];
 }BME280_Value;
 
-typedef void(*BME280_Read )( uint8_t address, uint8_t* buffer, uint16_t length, uint32_t timeout );
-typedef void(*BME280_Write)( uint8_t address, uint8_t* buffer, uint16_t length, uint32_t timeout );
+typedef void(*BME280_Read )( uint8_t i2c_address, uint8_t* buffer, uint16_t length, uint32_t timeout );
+typedef void(*BME280_Write)( uint8_t i2c_address, uint8_t* buffer, uint16_t length, uint32_t timeout );
 
 typedef struct BME280_Config_t{
 	BME280_Id 			id;

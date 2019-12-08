@@ -125,8 +125,7 @@ void onBme280ReadPeriodTimeout(){
 
 	ModbusSlave_SetRegisterValue( &bme280_1_HumidityReg1, humd_value.array[1] << 8 | humd_value.array[0] );
 	ModbusSlave_SetRegisterValue( &bme280_1_HumidityReg2, humd_value.array[3] << 8 | humd_value.array[2] );
-	//BME280_ReadTempC(_bme280Config, &temperature );
-	//BME280_ReadFloatHumidity( _bme280Config, &humidity );
+
 }
 
 /* Actuator dispatchers */
