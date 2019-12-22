@@ -23,11 +23,15 @@
 #define BME280_1_TEMPERATURE_2_REG			11
 #define BME280_1_HUMIDITY_1_REG				12
 #define BME280_1_HUMIDITY_2_REG				13
+#define BME280_1_AIRPRESSURE_1_REG			14
+#define BME280_1_AIRPRESSURE_2_REG			15
 
-#define BME280_2_TEMPERATURE_1_REG			14
-#define BME280_2_TEMPERATURE_2_REG			15
-#define BME280_2_HUMIDITY_1_REG				16
-#define BME280_2_HUMIDITY_2_REG				17
+#define BME280_2_TEMPERATURE_1_REG			16
+#define BME280_2_TEMPERATURE_2_REG			17
+#define BME280_2_HUMIDITY_1_REG				18
+#define BME280_2_HUMIDITY_2_REG				19
+#define BME280_2_AIRPRESSURE_1_REG			20
+#define BME280_2_AIRPRESSURE_2_REG			21
 
 ModbusRegister_Handle_t rainingRegHandle = { -1 ,0 };
 
@@ -55,10 +59,16 @@ ModbusRegister_Handle_t bme280_1_TemperatureReg1 = { -1 ,0 };
 ModbusRegister_Handle_t bme280_1_TemperatureReg2 = { -1 ,0 };
 ModbusRegister_Handle_t bme280_1_HumidityReg1 = { -1 ,0 };
 ModbusRegister_Handle_t bme280_1_HumidityReg2 = { -1 ,0 };
+ModbusRegister_Handle_t bme280_1_AirPressureReg1 = { -1 ,0 };
+ModbusRegister_Handle_t bme280_1_AirPressureReg2 = { -1 ,0 };
+
 
 ModbusRegister_Handle_t bme280_2_TemperatureReg1 = { -1 ,0 };
 ModbusRegister_Handle_t bme280_2_TemperatureReg2 = { -1 ,0 };
 ModbusRegister_Handle_t bme280_2_HumidityReg1 = { -1 ,0 };
 ModbusRegister_Handle_t bme280_2_HumidityReg2 = { -1 ,0 };
+ModbusRegister_Handle_t bme280_2_AirPressureReg1 = { -1 ,0 };
+ModbusRegister_Handle_t bme280_2_AirPressureReg2 = { -1 ,0 };
+
 
 #endif

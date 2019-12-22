@@ -115,16 +115,33 @@ void onSamplingBoxFillingTimeout(){
 
 void onBme280ReadPeriodTimeout(){
 
-	BME280_Value temp_value, humd_value;
-
+	BME280_Value temp_value, humd_value, press_value;
+	// read interior bme280 values
 	BME280_ReadTempC( &_bme280_1_Config, &(temp_value.value ) );
 	BME280_ReadFloatHumidity( &_bme280_1_Config, &(humd_value.value ) );
+	BME280_ReadFloatPressure( &_bme280_1_Config, &(press_value.value ) );
 
+	// set interior bme280 values to modbus
 	ModbusSlave_SetRegisterValue( &bme280_1_TemperatureReg1, temp_value.array[1] << 8 | temp_value.array[0] );
 	ModbusSlave_SetRegisterValue( &bme280_1_TemperatureReg2, temp_value.array[3] << 8 | temp_value.array[2] );
-
 	ModbusSlave_SetRegisterValue( &bme280_1_HumidityReg1, humd_value.array[1] << 8 | humd_value.array[0] );
 	ModbusSlave_SetRegisterValue( &bme280_1_HumidityReg2, humd_value.array[3] << 8 | humd_value.array[2] );
+	ModbusSlave_SetRegisterValue( &bme280_1_AirPressureReg1, press_value.array[1] << 8 | press_value.array[0] );
+	ModbusSlave_SetRegisterValue( &bme280_1_AirPressureReg2, press_value.array[3] << 8 | press_value.array[2] );
+
+
+	// read exterior bme280 values
+	BME280_ReadTempC( &_bme280_2_Config, &(temp_value.value ) );
+	BME280_ReadFloatHumidity( &_bme280_2_Config, &(humd_value.value ) );
+	BME280_ReadFloatPressure( &_bme280_2_Config, &(press_value.value ) );
+
+	// set exterior bme280 values to modbus
+	ModbusSlave_SetRegisterValue( &bme280_2_TemperatureReg1, temp_value.array[1] << 8 | temp_value.array[0] );
+	ModbusSlave_SetRegisterValue( &bme280_2_TemperatureReg2, temp_value.array[3] << 8 | temp_value.array[2] );
+	ModbusSlave_SetRegisterValue( &bme280_2_HumidityReg1, humd_value.array[1] << 8 | humd_value.array[0] );
+	ModbusSlave_SetRegisterValue( &bme280_2_HumidityReg2, humd_value.array[3] << 8 | humd_value.array[2] );
+	ModbusSlave_SetRegisterValue( &bme280_2_AirPressureReg1, press_value.array[1] << 8 | press_value.array[0] );
+	ModbusSlave_SetRegisterValue( &bme280_2_AirPressureReg2, press_value.array[3] << 8 | press_value.array[2] );
 
 }
 
@@ -432,11 +449,17 @@ int main(void)
   bme280_1_TemperatureReg2 = ModbusSlave_CreateInputRegister( BME280_1_TEMPERATURE_2_REG, 0 );
   bme280_1_HumidityReg1 = ModbusSlave_CreateInputRegister( BME280_1_HUMIDITY_1_REG, 0 );
   bme280_1_HumidityReg2 = ModbusSlave_CreateInputRegister( BME280_1_HUMIDITY_2_REG, 0 );
+  bme280_1_AirPressureReg1 = ModbusSlave_CreateInputRegister( BME280_1_AIRPRESSURE_1_REG, 0 );
+  bme280_1_AirPressureReg2 = ModbusSlave_CreateInputRegister( BME280_1_AIRPRESSURE_2_REG, 0 );
+
 
   bme280_2_TemperatureReg1 = ModbusSlave_CreateInputRegister( BME280_2_TEMPERATURE_1_REG, 0 );
   bme280_2_TemperatureReg2 = ModbusSlave_CreateInputRegister( BME280_2_TEMPERATURE_2_REG, 0 );
   bme280_2_HumidityReg1 = ModbusSlave_CreateInputRegister( BME280_2_HUMIDITY_1_REG, 0 );
   bme280_2_HumidityReg2 = ModbusSlave_CreateInputRegister( BME280_2_HUMIDITY_2_REG, 0 );
+  bme280_2_AirPressureReg1 = ModbusSlave_CreateInputRegister( BME280_2_AIRPRESSURE_1_REG, 0 );
+  bme280_2_AirPressureReg2 = ModbusSlave_CreateInputRegister( BME280_2_AIRPRESSURE_2_REG, 0 );
+
 
   ModbusSlave_AddOnWriteCallback( &userLed1RegHandle, led1RegOnWrite);
   ModbusSlave_AddOnWriteCallback( &userLed2RegHandle, led2RegOnWrite);
