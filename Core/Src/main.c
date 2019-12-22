@@ -114,7 +114,6 @@ void onSamplingBoxFillingTimeout(){
 }
 
 void onBme280ReadPeriodTimeout(){
-
 	BME280_Value temp_value, humd_value, press_value;
 	// read interior bme280 values
 	BME280_ReadTempC( &_bme280_1_Config, &(temp_value.value ) );
